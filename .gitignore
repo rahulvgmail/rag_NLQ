@@ -1,0 +1,41 @@
+# .gitignore
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+*.ipynb_checkpoints
+*.log
+*.csv
+*.dat
+*.out
+*.pid
+*.gz
+
+# Directories
+.venv/
+__pycache__/
+build/
+dist/
+*.egg-info/
+
+# Spyder
+*.pyproj 
+*.suo 
+*.sln 
+*.sln.docstates
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Mac
+.DS_Store
+
+#ignore the secrets files
+.env
