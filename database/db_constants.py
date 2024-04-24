@@ -19,7 +19,14 @@ postgres_host = os.getenv('POSTGRES_HOST')
 def main():
     # Test the database connection and get the schema
     schema = get_db_scema()
-    print(schema)
+    i = 0
+    for element in schema:
+        print(element)
+        i += 1
+        if i > 10:
+            break
+
+#    print(schema)
     
     # Test executing a read query
     query = "SELECT * FROM users"
@@ -34,6 +41,10 @@ def main():
     else:
         print(result)
 
+def get_connection():
+    db_url = f'postgresql://{postgres_user}:{postgres_user_password}@{postgres_host}:{postgres_port}/{postgres_db}'
+    return db_url
+
 def get_db_scema(  ):
     db_url = f'postgresql://{postgres_user}:{postgres_user_password}@{postgres_host}:{postgres_port}/{postgres_db}'
     # Connect to the database
@@ -42,11 +53,11 @@ def get_db_scema(  ):
     cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     
     # Execute the query to get the schema
-    cursor.execute("SELECT table_schema, table_name FROM information_schema.tables")
+    cursor.execute("SELECT * FROM information_schema.columns where table_schema not in ('pg_catalog', 'information_schema') order by table_schema, table_name ")
     # Fetch all the table names
     tables = cursor.fetchall()
 
-    tables = json.dumps(tables)
+#    tables = json.dumps(tables)
     # Close the cursor and connection
     cursor.close()
     conn.close()
