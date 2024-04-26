@@ -5,9 +5,9 @@ from dotenv import load_dotenv
 import openai
 import pandas as pd
 from qdrant_client import QdrantClient, grpc, models
+from exceptions import ValidationError
 
-
-from tools.utils import deterministic_uuid
+from tools.utils import TrainingPlan, TrainingPlanItem, deterministic_uuid
 
 DOCUMENTATION_COLLECTION_NAME = "documentation"
 DDL_COLLECTION_NAME = "ddl"
@@ -149,6 +149,61 @@ class qdrant_store:
         )
 
         return self._format_point_id(id, DOCUMENTATION_COLLECTION_NAME)
+    
+    def train(
+        self,
+        question: str = None,
+        sql: str = None,
+        ddl: str = None,
+        documentation: str = None,
+        plan: TrainingPlan = None,
+    ) -> str:
+        """
+        **Example:**
+        ```python
+        vn.train()
+        ```
+
+        Train Vanna.AI on a question and its corresponding SQL query.
+        If you call it with no arguments, it will check if you connected to a database and it will attempt to train on the metadata of that database.
+        If you call it with the sql argument, it's equivalent to [`vn.add_question_sql()`][vanna.base.base.VannaBase.add_question_sql].
+        If you call it with the ddl argument, it's equivalent to [`vn.add_ddl()`][vanna.base.base.VannaBase.add_ddl].
+        If you call it with the documentation argument, it's equivalent to [`vn.add_documentation()`][vanna.base.base.VannaBase.add_documentation].
+        Additionally, you can pass a [`TrainingPlan`][vanna.types.TrainingPlan] object. Get a training plan with [`vn.get_training_plan_generic()`][vanna.base.base.VannaBase.get_training_plan_generic].
+
+        Args:
+            question (str): The question to train on.
+            sql (str): The SQL query to train on.
+            ddl (str):  The DDL statement.
+            documentation (str): The documentation to train on.
+            plan (TrainingPlan): The training plan to train on.
+        """
+
+        if question and not sql:
+            raise ValidationError("Please also provide a SQL query")
+
+        if documentation:
+            print("Adding documentation....")
+            return self.add_documentation(documentation)
+
+        if sql:
+            if question is None:
+                question = self.generate_question(sql)
+                print("Question generated with sql:", question, "\nAdding SQL...")
+            return self.add_question_sql(question=question, sql=sql)
+
+        if ddl:
+            print("Adding ddl:", ddl)
+            return self.add_ddl(ddl)
+
+        if plan:
+            for item in plan._plan:
+                if item.item_type == TrainingPlanItem.ITEM_TYPE_DDL:
+                    self.add_ddl(item.item_value)
+                elif item.item_type == TrainingPlanItem.ITEM_TYPE_IS:
+                    self.add_documentation(item.item_value)
+                elif item.item_type == TrainingPlanItem.ITEM_TYPE_SQL:
+                    self.add_question_sql(question=item.item_name, sql=item.item_value)
  
     def get_training_data(self, **kwargs) -> pd.DataFrame:
         df = pd.DataFrame()
